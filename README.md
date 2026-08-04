@@ -58,6 +58,7 @@ Esta aplicación robusta en Laravel 12 y PHP 8.2+ está diseñada para la import
 
 8. **Iniciar el procesador de tareas (Queue Worker):**
    *Importante*: Para que los archivos CSV se procesen en segundo plano, debes dejar un worker escuchando la cola de tareas:
+   este contenedor deberia correr al iniciar el proyecto con ./vendor/bin/sail up -d  pero hay que validar si los contenedores estan corriendo o la tarea se queda siempre en pendiente
    ```bash
    ./vendor/bin/sail php artisan queue:work
    ```
