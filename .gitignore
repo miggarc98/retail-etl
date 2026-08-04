@@ -1,0 +1,42 @@
+# Dependencias PHP
+/vendor/
+composer.lock
+
+# Dependencias Node
+/node_modules/
+package-lock.json
+yarn.lock
+
+# Assets compilados
+/public/build/
+/public/css/
+/public/js/
+public/hot
+public/storage
+storage/*.key
+
+# Archivos de entorno
+.env
+.env.backup
+.env.production
+.env.local
+
+# Logs
+*.log
+/storage/logs/*.log
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Laravel
+/storage/framework/views/*.php
+/storage/framework/cache/*.php
+/storage/framework/sessions/*.php
+
+# Docker
+docker-compose.override.yml
+/.docker/
