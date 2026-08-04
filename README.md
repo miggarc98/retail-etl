@@ -4,6 +4,48 @@ Esta aplicación robusta en Laravel 12 y PHP 8.2+ está diseñada para la import
 
 ---
 
+## 🛠️ Tecnologías Utilizadas
+
+### Backend
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| **PHP** | 8.4 | Lenguaje principal del backend |
+| **Laravel** | 12.x | Framework PHP para API REST y lógica de negocio |
+| **MySQL** | 8.4 | Base de datos relacional principal |
+| **Redis** | 7.x (Alpine) | Broker de colas y caché |
+| **Laravel Queues** | - | Procesamiento asíncrono de archivos CSV |
+| **Laravel Sail** | - | Entorno de desarrollo con Docker |
+
+### Frontend
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| **Blade** | - | Motor de plantillas de Laravel |
+| **Tailwind CSS** | 3.x | Estilos y diseño responsive |
+| **JavaScript Vanilla** | ES6 | Lógica del dashboard (fetch, eventos, manipulación DOM) |
+| **Vite** | 5.x | Bundler y compilación de assets |
+
+### Infraestructura
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| **Docker** | 24.x | Contenerización de servicios |
+| **Docker Compose** | 2.x | Orquestación de contenedores |
+| **Laravel Sail** | - | Entorno de desarrollo optimizado |
+
+### Herramientas de Desarrollo
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| **Composer** | 2.x | Gestor de dependencias PHP |
+| **NPM** | 10.x | Gestor de dependencias JavaScript |
+| **Git** | - | Control de versiones |
+
+### APIs y Formatos
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| **REST API** | JSON | Comunicación frontend-backend |
+| **CSV** | - | Formato de archivos de entrada |
+
+---
+
 ## 1. Guía de Instalación y Ejecución
 
 ### Prerrequisitos
@@ -47,18 +89,22 @@ Esta aplicación robusta en Laravel 12 y PHP 8.2+ está diseñada para la import
    ```
 
 7. **Instalar y compilar dependencias del Frontend:**
-   Instala Node modules y compila los assets (CSS/JS) para producción con :
+   Instala Node modules y compila los assets (CSS/JS):
    ```bash
    ./vendor/bin/sail npm install
-   ```
-   Compila los assets:
-   ```bash
    ./vendor/bin/sail npm run build
    ```
 
 8. **Iniciar el procesador de tareas (Queue Worker):**
-   *Importante*: Para que los archivos CSV se procesen en segundo plano, debes dejar un worker escuchando la cola de tareas:
-   este contenedor deberia correr al iniciar el proyecto con ./vendor/bin/sail up -d  pero hay que validar si los contenedores estan corriendo o la tarea se queda siempre en pendiente
+   *Importante*: Para que los archivos CSV se procesen en segundo plano, debes dejar un worker escuchando la cola de tareas. El contenedor `queue-worker` debería correr automáticamente al iniciar el proyecto con `./vendor/bin/sail up -d`.
+
+   Verificar que el worker está corriendo:
+   ```bash
+   ./vendor/bin/sail ps
+   ```
+   Deberías ver el servicio `queue-worker` en estado `Up` o `running`.
+
+   Si el worker no está corriendo, iniciarlo manualmente:
    ```bash
    ./vendor/bin/sail php artisan queue:work
    ```
@@ -95,6 +141,22 @@ El cálculo de reportes agregados para grandes volúmenes de datos puede ser len
     *   Esto permite al motor de base de datos filtrar y agrupar (usando `GROUP BY`) de manera extremadamente veloz, transformando escaneos completos de tablas (Seq Scans) en búsquedas indexadas de alta velocidad.
 *   **Precalculación de Columnas:** El campo `total` (fórmula `quantity * unit_price * (1 - discount)`) se calcula del lado del servidor PHP durante la etapa de ingesta y se persiste directamente en la columna `total`. Esto evita tener que calcular operaciones aritméticas al vuelo para cada registro durante la ejecución de las consultas analíticas del reporte.
 
+### C. Arquitectura del Frontend (Dashboard)
+El dashboard sigue un enfoque híbrido pragmático que equilibra simplicidad y mantenibilidad:
+
+*   **Plantilla Única (Blade):** Todo el HTML está definido en un único archivo `dashboard.blade.php`, facilitando la modificación de estilos y estructura por parte de diseñadores.
+*   **Lógica en JavaScript Vanilla:** El archivo `dashboard.js` maneja toda la lógica de negocio:
+    *   Llamadas a la API REST (`fetch`)
+    *   Renderizado dinámico de tablas
+    *   Actualización de estadísticas en tiempo real
+    *   Manejo de eventos (subir archivo, ver errores, generar reportes)
+*   **Actualización en Tiempo Real:** El dashboard se actualiza automáticamente cada 30 segundos mediante `setInterval`, manteniendo la información siempre actualizada sin necesidad de recargar la página.
+
+### D. Gestión de Errores y Feedback
+*   **Modales Informativos:** Los errores de importación se muestran en un modal con detalles específicos (número de fila, mensaje de error).
+*   **Alertas en Tiempo Real:** Feedback visual inmediato al subir archivos (éxito/error).
+*   **Estados Claros:** Cada importación muestra su estado visualmente (completado, procesando, fallido, con errores).
+
 ---
 
 ## 3. Propuesta Técnica ante Escalabilidad (Millones de Registros)
@@ -108,6 +170,6 @@ Si el volumen de datos escala a millones de registros por archivo, la arquitectu
 3.  **Caché Analítica para Reportes:**
     Una vez que una importación finaliza (`status` cambia a `completed`), sus registros ya no cambian. El backend calculará el reporte una única vez y lo almacenará en un almacén de caché como **Redis** de forma indefinida con la clave `report_summary_{import_id}`. Cualquier consulta subsiguiente al endpoint del reporte retornará la respuesta desde caché en microsegundos, eliminando la carga de consultas SQL a la base de datos.
 4.  **Bases de Datos Columnares / Motores OLAP:**
-    Para análisis en tiempo real sobre millones de filas, se puede migrar la tabla de reportes a un motor de base de datos columnar como **ClickHouse**  por rangos. Las bases de datos relacionales tradicionales como MySQL/PostgreSQL pueden saturarse ante agregaciones complejas sobre tablas gigantescas.
+    Para análisis en tiempo real sobre millones de filas, se puede migrar la tabla de reportes a un motor de base de datos columnar como **ClickHouse**. Las bases de datos relacionales tradicionales como MySQL/PostgreSQL pueden saturarse ante agregaciones complejas sobre tablas gigantescas.
 5.  **Cargas de Alta Velocidad (Bulk Loading nativo):**
     En lugar de usar inserciones en lote a través del ORM Eloquent, se puede utilizar el cargador masivo nativo del motor de base de datos, como `LOAD DATA INFILE` en MySQL o `COPY` en PostgreSQL, que cargan archivos estructurados directamente a nivel de almacenamiento del motor a velocidades de disco.
