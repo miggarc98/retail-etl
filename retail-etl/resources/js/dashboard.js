@@ -388,3 +388,10 @@ async function deleteImport(id) {
 // Auto-refresh cada 30 segundos (opcional)
 setInterval(loadImports, 30000);
 
+// Exponer funciones al scope global para interactuar con HTML dinámico y onclick inline
+window.loadImports = loadImports;
+window.viewErrors = viewErrors;
+window.loadErrorsPage = loadErrorsPage;
+window.viewReport = viewReport;
+window.deleteImport = deleteImport;
+

@@ -103,7 +103,7 @@ Si el volumen de datos escala a millones de registros por archivo, la arquitectu
 1.  **División de Archivos (File Chunking):**
     En lugar de despachar un único Job para un archivo de 5 millones de registros, el archivo se dividirá inicialmente en el servidor web en sub-archivos más pequeños (ej. de 50,000 registros). Cada sub-archivo despachará un Job independiente a la cola.
 2.  **Paralelización de Workers:**
-    Al dividir el archivo, múltiples Queue Workers independientes (escalados horizontalmente en contenedores o pods de Kubernetes) pueden procesar los sub-archivos de forma paralela en la cola (usando Redis o Amazon SQS como broker), reduciendo el tiempo de procesamiento lineal de forma drástica.
+    Al dividir el archivo, múltiples Queue Workers independientes (escalados horizontalmente en contenedores o pods de Kubernetes) pueden procesar los sub-archivos de forma paralela en la cola (usando Redis como broker), reduciendo el tiempo de procesamiento lineal de forma drástica.
 3.  **Caché Analítica para Reportes:**
     Una vez que una importación finaliza (`status` cambia a `completed`), sus registros ya no cambian. El backend calculará el reporte una única vez y lo almacenará en un almacén de caché como **Redis** de forma indefinida con la clave `report_summary_{import_id}`. Cualquier consulta subsiguiente al endpoint del reporte retornará la respuesta desde caché en microsegundos, eliminando la carga de consultas SQL a la base de datos.
 4.  **Bases de Datos Columnares / Motores OLAP:**
