@@ -47,7 +47,7 @@ Esta aplicación robusta en Laravel 12 y PHP 8.2+ está diseñada para la import
    ```
 
 7. **Instalar y compilar dependencias del Frontend:**
-   Instala Node modules y compila los assets (CSS/JS) para producción:
+   Instala Node modules y compila los assets (CSS/JS) para producción con :
    ```bash
    ./vendor/bin/sail npm install
    ```
@@ -101,12 +101,12 @@ El cálculo de reportes agregados para grandes volúmenes de datos puede ser len
 Si el volumen de datos escala a millones de registros por archivo, la arquitectura propuesta se adaptaría mediante las siguientes mejoras:
 
 1.  **División de Archivos (File Chunking):**
-    En lugar de despachar un único Job para un archivo de 5 millones de registros, el archivo se dividirá inicialmente en el servidor web en sub-archivos más pequeños (ej. de 50,000 registros). Cada sub-archivo despachará un Job independiente a la cola.
+    En lugar de despachar un único Job para un archivo de 5 millones de registros, el archivo se dividirá inicialmente en el servidor web en sub-archivos más pequeños. Cada sub-archivo despachará un Job independiente a la cola.
 2.  **Paralelización de Workers:**
     Al dividir el archivo, múltiples Queue Workers independientes (escalados horizontalmente en contenedores o pods de Kubernetes) pueden procesar los sub-archivos de forma paralela en la cola (usando Redis como broker), reduciendo el tiempo de procesamiento lineal de forma drástica.
 3.  **Caché Analítica para Reportes:**
     Una vez que una importación finaliza (`status` cambia a `completed`), sus registros ya no cambian. El backend calculará el reporte una única vez y lo almacenará en un almacén de caché como **Redis** de forma indefinida con la clave `report_summary_{import_id}`. Cualquier consulta subsiguiente al endpoint del reporte retornará la respuesta desde caché en microsegundos, eliminando la carga de consultas SQL a la base de datos.
 4.  **Bases de Datos Columnares / Motores OLAP:**
-    Para análisis en tiempo real sobre millones de filas, se puede migrar la tabla de reportes a un motor de base de datos columnar como **ClickHouse** o **PostgreSQL con particionamiento nativo** por rangos. Las bases de datos relacionales tradicionales como MySQL/PostgreSQL pueden saturarse ante agregaciones complejas sobre tablas gigantescas.
+    Para análisis en tiempo real sobre millones de filas, se puede migrar la tabla de reportes a un motor de base de datos columnar como **ClickHouse**  por rangos. Las bases de datos relacionales tradicionales como MySQL/PostgreSQL pueden saturarse ante agregaciones complejas sobre tablas gigantescas.
 5.  **Cargas de Alta Velocidad (Bulk Loading nativo):**
     En lugar de usar inserciones en lote a través del ORM Eloquent, se puede utilizar el cargador masivo nativo del motor de base de datos, como `LOAD DATA INFILE` en MySQL o `COPY` en PostgreSQL, que cargan archivos estructurados directamente a nivel de almacenamiento del motor a velocidades de disco.
